@@ -155,3 +155,32 @@ xác nhận.
 - Nhánh DirectHome trong repo chính giữ nguyên.
 - Nhánh B99 `codex/compatboot1-menuprobe2-nobypass` giữ nguyên.
 - Mọi thay đổi của phép thử nằm trên `codex/menu3-homebridge1`.
+
+
+## 2026-09-29 implementation correction from device evidence
+
+The device video/log set used for M3HOME1 establishes that the successful Menu3 baseline is **normal EKA2L1/HLE frontend mode**, not CompatBoot/native PhoneUI:
+
+- runtime marker: `[NBOOT2][MODE] native_phone_boot=0`;
+- Menu is registered as UID `0x101F4CD2`;
+- Home screen is registered as UID `0x102750F0`;
+- the iOS frontend already launches system applications through
+  `RootViewController::launchAppUid` → `bridge::launch_app(uid)` →
+  `g_state->launcher_->launch_app(uid)`.
+
+Therefore M3HOME1 does **not** construct a native AppArc client session and does not pass through PhoneUI, `ailaunch.exe`, EStart, or a TfxServer shim.
+
+The minimal implementation is:
+
+1. launch Menu3 normally (UID `0x101F4CD2`);
+2. keep Menu3 running;
+3. expose **Vào màn hình chính** only while that UID is current;
+4. on selection, queue one main-thread turn and call
+   `launchAppUid:0x102750F0`;
+5. instrument the existing bridge route with:
+   - `[M3HOME1][TRIGGER]`
+   - `[M3HOME1][APPARC_REQUEST]`
+   - `[M3HOME1][APPARC_DISPATCHED]`
+   - `[M3HOME1][GUARD_REJECT]`.
+
+This is intentionally a one-variable experiment: no firmware changes, no Home dependency emulation, no Menu3 shutdown before launch, and no changes to AppList/WindowServer behavior. If Home launches but does not become visible, the next investigation is foreground/window-group ownership rather than startup-chain bootstrapping.
