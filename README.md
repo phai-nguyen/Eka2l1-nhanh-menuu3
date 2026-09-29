@@ -43,8 +43,8 @@ Baseline có thẩm quyền:
 
 - **HOMEONLY2 / MENUUI36 NOJAVA**
 - không quay lại NativeBoot/CompatBoot cho hướng này
-- mục tiêu hiện tại: chẩn đoán `Home USER 11` liên quan `aiscutplugin.dll`
+- mục tiêu hiện tại: xác nhận HOMEONLY8 giải phóng WidgetRegistry/AppArc startup wait và khôi phục touch trên Home
 
 Handoff hiện tại:
 
-`docs/handoff/CURRENT-HOMEONLY7-CENREPQUOTED-2026-09-29.md`
+`docs/handoff/CURRENT-HOMEONLY8-APPLIST-NONNATIVE-2026-09-29.md`
