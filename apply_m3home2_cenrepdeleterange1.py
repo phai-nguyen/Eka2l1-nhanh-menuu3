@@ -307,48 +307,37 @@ def main() -> None:
     if "transactor.deleted_keys.clear();\n        set_transaction_mode(mode);" not in rp:
         rp = replace_once(rp, start_old, start_new, "transaction start tombstone clear")
 
-    # Extend B29 commit with deletion application + persistence.
-    commit_old = """        const std::uint32_t changed_count =
-            static_cast<std::uint32_t>(transactor.changes.size());
+    # Replace the full B29 commit method by stable function boundaries.
+    # B83 later wraps completion calls for diagnostics, so matching the exact
+    # body is intentionally avoided here.
+    if "[M3HOME2][CEN_DELETE_COMMIT]" not in rp:
+        commit_start = "    void central_repo_client_subsession::commit_transaction(service::ipc_context *ctx) {"
+        cancel_start = "    void central_repo_client_subsession::cancel_transaction(service::ipc_context *ctx) {"
+        si = rp.find(commit_start)
+        ei = rp.find(cancel_start, si + len(commit_start))
+        if si < 0 or ei < 0:
+            fail("cannot locate bounded commit_transaction method")
+
+        commit_method = r'''    void central_repo_client_subsession::commit_transaction(service::ipc_context *ctx) {
+        if (!is_active()) {
+            LOG_ERROR(SERVICE_CENREP,
+                "[NBOOT2][CEN_TX_COMMIT] repo=0x{:X} active=false completion={}",
+                attach_repo->uid, epoc::error_argument);
+            complete_central_repo_ipc(ctx, epoc::error_argument);
+            return;
+        }
+
+        io_system *io = ctx->sys->get_io_system();
+        device_manager *mngr = ctx->sys->get_device_manager();
+
         std::vector<std::uint32_t> changed_keys;
-        changed_keys.reserve(transactor.changes.size());
-
-        for (auto &change : transactor.changes) {
-            const std::uint32_t key = change.first;
-            central_repo_entry &staged = change.second;
-
-            auto result = std::find_if(attach_repo->entries.begin(), attach_repo->entries.end(),
-                [&](const central_repo_entry &entry) { return entry.key == key; });
-
-            if (result != attach_repo->entries.end()) {
-                *result = staged;
-            } else {
-                attach_repo->entries.push_back(staged);
-            }
-
-            auto &deleted = attach_repo->deleted_settings;
-            deleted.erase(std::remove(deleted.begin(), deleted.end(), key), deleted.end());
-            changed_keys.push_back(key);
-        }
-
-        transactor.changes.clear();
-        set_active(false);
-
-        // Persist once after the complete staged set has been installed.
-        write_changes(io, mngr);
-
-        for (const std::uint32_t key : changed_keys) {
-            modification_success(key);
-        }
-"""
-    commit_new = """        std::vector<std::uint32_t> changed_keys;
         changed_keys.reserve(transactor.changes.size());
         std::vector<std::uint32_t> deleted_keys;
         deleted_keys.reserve(transactor.deleted_keys.size());
 
-        // Apply transaction-local tombstones first. A key present in the ROM
-        // needs a persisted deleted-settings marker so it does not reappear
-        // when the repository is reopened.
+        // Apply transaction-local tombstones first. A key present in the
+        // committed/ROM-derived view needs a persisted deleted-settings marker
+        // so it does not reappear when the repository is reopened.
         for (const std::uint32_t key : transactor.deleted_keys) {
             auto result = std::find_if(attach_repo->entries.begin(), attach_repo->entries.end(),
                 [&](const central_repo_entry &entry) { return entry.key == key; });
@@ -407,9 +396,18 @@ def main() -> None:
                 "[M3HOME2][CEN_DELETE_COMMIT] repo=0x{:X} deleted={} changed={}",
                 attach_repo->uid, deleted_keys.size(), changed_keys.size());
         }
-"""
-    if "[M3HOME2][CEN_DELETE_COMMIT]" not in rp:
-        rp = replace_once(rp, commit_old, commit_new, "transaction commit DeleteRange support")
+
+        // Preserve the B29 contract currently consumed by the guest.
+        ctx->write_data_to_descriptor_argument<std::uint32_t>(0, changed_count);
+
+        LOG_WARN(SERVICE_CENREP,
+            "[NBOOT2][CEN_TX_COMMIT] repo=0x{:X} changed={} active=false completion=0",
+            attach_repo->uid, changed_count);
+        complete_central_repo_ipc(ctx, epoc::error_none);
+    }
+
+'''
+        rp = rp[:si] + commit_method + rp[ei:]
 
     cancel_old = """        const std::size_t discarded = transactor.changes.size();
         transactor.changes.clear();
