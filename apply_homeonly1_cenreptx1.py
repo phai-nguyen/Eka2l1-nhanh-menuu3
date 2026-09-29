@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Apply HOMEONLY1 CENREPTX1 on top of the B28 FASTBUILD baseline.
+"""Apply HOMEONLY1 CENREPTX1 on the pre-NativeBoot MENUUI14 FIX2 baseline.
 
-B29 fixes the first blocker exposed by the B28 device trace:
-UIKON/Eiksrv opens the FEP Central Repository, starts a transaction, writes
-settings, and commits. Upstream EKA2L1 currently stubs Start/Cancel, leaves
-Commit unregistered/unhandled, and cannot Set a missing key correctly.
+Home/UIKON opens Central Repository transactions, writes settings, and commits.
+The pre-NativeBoot EKA2L1 baseline stubs Start/Cancel, leaves Commit
+unregistered/unhandled, and cannot Set a missing key correctly.
 
 This patch is generic Central Repository compatibility. It does not hardcode
 the FEP repository UID or any Nokia-specific key/value.
@@ -35,7 +34,7 @@ def replace_region(text: str, start: str, end: str, replacement: str, label: str
 
 def main() -> None:
     if len(sys.argv) != 2:
-        fail("usage: apply_nativeboot2_b29_cenreptx1.py <upstream-root>")
+        fail("usage: apply_homeonly1_cenreptx1.py <upstream-root>")
 
     up = Path(sys.argv[1]).resolve()
     repo_cpp = up / "src/emu/services/src/centralrepo/repo.cpp"
@@ -56,12 +55,8 @@ def main() -> None:
             fail(f"protocol opcode missing: {needle}")
 
     rp = repo_cpp.read_text(encoding="utf-8")
-    if "[HOMEONLY1][CEN_RESET_ALL]" not in rp:
-        fail("B20 CENRESETALL1 marker missing")
-    if "[HOMEONLY1][WSERV_LIBRARY_TYPE]" not in svc_cpp.read_text(encoding="utf-8"):
-        fail("B28 WSERVLIBTYPE1 marker missing")
-    if (up / "src/emu/j2me").exists():
-        fail("NOJAVA invariant violated")
+    # HOMEONLY1 intentionally has no dependency on B20/B28, NativeBoot,
+    # CompatBoot, DirectHome, PhoneUI probes, or the NOJAVA experiment.
 
     # Register and route the already-defined commit opcode.
     cc = cen_cpp.read_text(encoding="utf-8")
