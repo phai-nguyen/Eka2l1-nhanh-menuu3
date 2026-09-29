@@ -307,17 +307,6 @@ def patch_root(path: Path) -> None:
 ''' + methods_anchor
     text = replace_once(text, methods_anchor, methods, "hybrid methods")
 
-    exit_anchor = """- (void)exitGame {
-    self.gameRunning = NO;
-"""
-    exit_repl = """- (void)exitGame {
-    if (self.hybridHomeView) {
-        self.hybridHomeView.hidden = YES;
-    }
-    self.gameRunning = NO;
-"""
-    text = replace_once(text, exit_anchor, exit_repl, "exit cleanup")
-
     path.write_text(text, encoding="utf-8")
 
 
