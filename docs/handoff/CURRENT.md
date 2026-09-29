@@ -8,7 +8,7 @@ Authoritative full project checkpoint:
 
 Detailed HOMEONLY5/AISCUT handoff:
 
-[NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md](NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md)
+[NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md on codex/menu3-homeonly7-cenrepquoted1](https://github.com/phai-nguyen/Eka2l1-nhanh-menuu3/blob/codex/menu3-homeonly7-cenrepquoted1/docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md)
 
 Repository:
 
