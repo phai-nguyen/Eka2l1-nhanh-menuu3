@@ -1,0 +1,6 @@
+# HOMEONLY1 applies only the Home path on the pre-NativeBoot MENUUI14 FIX2 baseline.
+apply_m3home1_homebridge.py
+apply_homeonly1_cenreptx1.py
+apply_homeonly1_cenrepdeleterange1.py
+apply_homeonly1_cenrepgetstringdiag1.py
+test_homeonly1_contract.py
