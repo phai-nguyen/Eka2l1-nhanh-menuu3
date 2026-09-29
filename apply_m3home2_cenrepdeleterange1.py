@@ -416,9 +416,24 @@ def main() -> None:
         si = rp.find(cancel_start)
         if si < 0:
             fail("cannot locate cancel_transaction method")
-        ei = rp.find("\n    void central_repo_client_subsession::", si + len(cancel_start))
+        # cancel_transaction can be the last method in this translation unit;
+        # find its closing brace structurally instead of relying on a following method.
+        open_brace = rp.find("{", si)
+        if open_brace < 0:
+            fail("cannot locate cancel_transaction opening brace")
+        depth = 0
+        ei = -1
+        for pos in range(open_brace, len(rp)):
+            ch = rp[pos]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    ei = pos + 1
+                    break
         if ei < 0:
-            fail("cannot locate cancel_transaction method end")
+            fail("cannot locate cancel_transaction closing brace")
 
         cancel_method = r'''    void central_repo_client_subsession::cancel_transaction(service::ipc_context *ctx) {
         const std::size_t discarded =
@@ -434,7 +449,7 @@ def main() -> None:
     }
 
 '''
-        rp = rp[:si] + cancel_method + rp[ei + 1:]
+        rp = rp[:si] + cancel_method + rp[ei:]
 
     repo_cpp.write_text(rp, encoding="utf-8")
 
