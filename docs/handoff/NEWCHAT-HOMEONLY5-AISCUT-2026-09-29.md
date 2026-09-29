@@ -1,3 +1,13 @@
+# ⚠️ SUPERSEDED / ĐÃ CÓ HANDOFF MỚI
+
+Trạng thái hiện tại đã tiến tới HOMEONLY7. Tiếp tục từ:
+
+`docs/handoff/CURRENT-HOMEONLY7-CENREPQUOTED-2026-09-29.md`
+
+HANDOFF bên dưới được giữ làm lịch sử HOMEONLY5/AISCUT và không còn là điểm bắt đầu mới nhất.
+
+---
+
 # NEW CHAT HANDOFF — HOMEONLY5 → AISCUT USER/11
 
 **Ngày:** 2026-09-29  
