@@ -1,0 +1,52 @@
+name: Inspect M3HOME1 upstream API
+
+"on":
+  push:
+    branches:
+      - codex/menu3-homebridge1
+    paths:
+      - ".github/workflows/inspect-m3home-upstream.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v4
+
+    - name: Restore stable B28 bootstrap
+      id: fast_bootstrap
+      uses: actions/cache/restore@v4
+      with:
+        path: upstream
+        key: eka2l1-fastbuild1-bootstrap-b28-nojava-manic3-macos15-v1
+
+    - name: Require bootstrap cache
+      run: test "${{ steps.fast_bootstrap.outputs.cache-hit }}" = "true"
+
+    - name: Apply B29-B98 current milestones
+      run: |
+        set -euo pipefail
+        UPSTREAM="$GITHUB_WORKSPACE/upstream"
+        python3 ci/fastbuild1_manifest.py validate "$GITHUB_WORKSPACE"
+        python3 ci/fastbuild1_manifest.py apply "$GITHUB_WORKSPACE" "$UPSTREAM"
+
+    - name: Inspect launch surfaces
+      run: |
+        set -euo pipefail
+        UPSTREAM="$GITHUB_WORKSPACE/upstream"
+        echo '=== emu_bridge.h launch-related declarations ==='
+        grep -n -E 'launch|game|app|native_phone|compat' "$UPSTREAM/src/emu/ios/include/ios/emu_bridge.h" || true
+        echo '=== emu_bridge.mm launch-related symbols ==='
+        grep -n -E 'launch|game|app|g_state|symsys|winserv|applist' "$UPSTREAM/src/emu/ios/src/emu_bridge.mm" | head -n 240 || true
+        echo '=== RootViewController bridge calls ==='
+        grep -n -E 'bridge::|currentGameUid|GameMenu|phoneRunning|CompatBoot' "$UPSTREAM/src/emu/ios/app/RootViewController.mm" | head -n 320 || true
+        echo '=== iOS state declarations ==='
+        grep -n -E 'class emulator|struct emulator|symsys|conf;|winserv|native_phone|compat_menu' "$UPSTREAM/src/emu/ios/include/ios/state.h" || true
+        echo '=== AppList public launch API ==='
+        grep -n -E 'launch_app|get_registration|get_app_list_server_name' "$UPSTREAM/src/emu/services/include/services/applist/applist.h" || true
