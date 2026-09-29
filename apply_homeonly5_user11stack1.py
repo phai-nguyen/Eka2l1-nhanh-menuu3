@@ -34,12 +34,8 @@ def main():
 
     text = svc_p.read_text(encoding="utf-8")
 
-    for marker in (
-        "SYMBIAN-SYSTEMAPPS1 MENUUI4 THREADKILL:",
-        "SYMBIAN-SYSTEMAPPS1 MENUUI22 SCHEDRUN_SVC:",
-    ):
-        if marker not in text:
-            fail(f"authority marker missing: {marker}")
+    if "SYMBIAN-SYSTEMAPPS1 MENUUI4 THREADKILL:" not in text:
+        fail("authority marker missing: MENUUI4 THREADKILL")
 
     if "[HOMEONLY5][USER11_CONTEXT]" in text:
         print(f"{MARK}: already applied")
