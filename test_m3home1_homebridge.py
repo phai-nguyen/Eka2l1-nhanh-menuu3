@@ -10,6 +10,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PATCHER = HERE / "apply_m3home1_homebridge.py"
 
+# FASTBUILD's manifest invokes every contract test as:
+#   python3 test_script.py <upstream-root>
+# unittest would otherwise interpret that path as a test name.
+UPSTREAM_UNDER_TEST = Path(sys.argv[1]).resolve() if len(sys.argv) == 2 else None
+if UPSTREAM_UNDER_TEST is not None:
+    sys.argv = [sys.argv[0]]
+
 ROOT_FIXTURE = r'''- (void)launchAppUid:(std::uint32_t)uid {
     self.currentGameUid = uid;
     eka2l1::ios::bridge::launch_app(uid);
@@ -80,6 +87,21 @@ class M3Home1HomeBridgeTest(unittest.TestCase):
             self.assertNotIn("TfxServer", changed)
             self.assertNotIn("Phone start-up failed", changed)
             self.assertNotIn("start_native_phone()", changed)
+
+    def test_live_upstream_markers_when_invoked_by_fastbuild(self) -> None:
+        if UPSTREAM_UNDER_TEST is None:
+            self.skipTest("no FASTBUILD upstream argument")
+        rv = UPSTREAM_UNDER_TEST / "src/emu/ios/app/RootViewController.mm"
+        br = UPSTREAM_UNDER_TEST / "src/emu/ios/src/emu_bridge.mm"
+        self.assertTrue(rv.is_file())
+        self.assertTrue(br.is_file())
+        root_text = rv.read_text(encoding="utf-8")
+        bridge_text = br.read_text(encoding="utf-8")
+        self.assertIn("self.currentGameUid == 0x101F4CD2u", root_text)
+        self.assertIn("[self launchAppUid:0x102750F0u]", root_text)
+        self.assertIn("[M3HOME1][TRIGGER]", root_text)
+        self.assertIn("[M3HOME1][APPARC_REQUEST]", bridge_text)
+        self.assertIn("[M3HOME1][APPARC_DISPATCHED]", bridge_text)
 
     def test_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as td:
