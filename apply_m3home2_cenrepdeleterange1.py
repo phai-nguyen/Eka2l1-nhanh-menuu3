@@ -409,15 +409,19 @@ def main() -> None:
 '''
         rp = rp[:si] + commit_method + rp[ei:]
 
-    cancel_old = """        const std::size_t discarded = transactor.changes.size();
-        transactor.changes.clear();
-        set_active(false);
+    # Replace cancel_transaction by method boundaries for the same reason as
+    # commit_transaction: B83 wraps completions after B29.
+    if "transactor.changes.size() + transactor.deleted_keys.size()" not in rp:
+        cancel_start = "    void central_repo_client_subsession::cancel_transaction(service::ipc_context *ctx) {"
+        si = rp.find(cancel_start)
+        if si < 0:
+            fail("cannot locate cancel_transaction method")
+        ei = rp.find("\n    void central_repo_client_subsession::", si + len(cancel_start))
+        if ei < 0:
+            fail("cannot locate cancel_transaction method end")
 
-        LOG_WARN(SERVICE_CENREP,
-            "[NBOOT2][CEN_TX_CANCEL] repo=0x{:X} discarded={} active=false completion=0",
-            attach_repo->uid, discarded);
-"""
-    cancel_new = """        const std::size_t discarded =
+        cancel_method = r'''    void central_repo_client_subsession::cancel_transaction(service::ipc_context *ctx) {
+        const std::size_t discarded =
             transactor.changes.size() + transactor.deleted_keys.size();
         transactor.changes.clear();
         transactor.deleted_keys.clear();
@@ -426,9 +430,11 @@ def main() -> None:
         LOG_WARN(SERVICE_CENREP,
             "[NBOOT2][CEN_TX_CANCEL] repo=0x{:X} discarded={} active=false completion=0",
             attach_repo->uid, discarded);
-"""
-    if "transactor.changes.size() + transactor.deleted_keys.size()" not in rp:
-        rp = replace_once(rp, cancel_old, cancel_new, "transaction cancel DeleteRange support")
+        complete_central_repo_ipc(ctx, epoc::error_none);
+    }
+
+'''
+        rp = rp[:si] + cancel_method + rp[ei + 1:]
 
     repo_cpp.write_text(rp, encoding="utf-8")
 
