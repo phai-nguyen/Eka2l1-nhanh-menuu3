@@ -47,4 +47,4 @@ Baseline có thẩm quyền:
 
 Handoff hiện tại:
 
-`docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md`
+`docs/handoff/CURRENT-HOMEONLY7-CENREPQUOTED-2026-09-29.md`
