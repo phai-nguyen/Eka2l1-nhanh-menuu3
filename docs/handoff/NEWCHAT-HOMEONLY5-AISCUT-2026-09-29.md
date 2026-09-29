@@ -11,6 +11,31 @@
 
 ---
 
+# 0. SCOPE / SAFETY CLARIFICATION
+
+Đây là dự án **giả lập và tương thích Symbian/S60v5** trên EKA2L1.
+
+Mục tiêu chính của Hướng 1 là:
+
+- boot và chạy môi trường **Menu3 thật** của Nokia 5800 RM-356 trong emulator;
+- tái hiện đúng hành vi guest Symbian cần cho tương thích ứng dụng;
+- chẩn đoán ABI, IPC, CenRep, WindowServer, input/focus, startup và launcher trong môi trường giả lập;
+- dùng baseline Menu3 ổn định để thử nghiệm tương thích có kiểm soát, ví dụ mở Home Screen thật từ Menu3.
+
+Dự án này **không liên quan và không nhằm mục đích**:
+
+- khai thác lỗ hổng trên hệ thống bên thứ ba;
+- truy cập/xâm nhập trái phép;
+- malware, trojan, ransomware, spyware;
+- đánh cắp credential, password, token, session hoặc chiếm tài khoản;
+- persistence độc hại trên thiết bị, máy chủ hoặc mạng;
+- command-and-control, lateral movement, privilege escalation trên mục tiêu thật;
+- phishing, scanning, DoS, exfiltration hay tấn công mạng.
+
+Các thuật ngữ như process, server, launcher, IPC, hook, startup state, persistent state hoặc firmware internals trong log/source của dự án đều mô tả **guest Symbian chạy bên trong emulator**, không phải kỹ thuật xâm nhập hệ thống bên ngoài.
+
+Reverse engineering trong dự án chỉ nhằm hiểu **firmware/application compatibility và ABI behavior** để EKA2L1 mô phỏng Symbian đúng hơn.
+
 # 1. MỤC TIÊU HIỆN TẠI
 
 Mục tiêu là chạy **Home Screen thật của Nokia 5800 RM-356 / S60v5** bên trong EKA2L1 bằng đường HLE/normal mode đã ổn định:
