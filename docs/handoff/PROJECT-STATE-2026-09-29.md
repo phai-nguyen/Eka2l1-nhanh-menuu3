@@ -452,7 +452,7 @@ Future builds should restore the latest valid cache and apply only the next delt
 
 For a new conversation, start from this file plus:
 
-`docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md`
+`codex/menu3-homeonly7-cenrepquoted1:docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md`
 
 The key continuity sentence is:
 
