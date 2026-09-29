@@ -4,7 +4,7 @@ Updated: 2026-09-29
 
 Authoritative handoff:
 
-`docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md`
+`docs/handoff/NEWCHAT-HOMEONLY7-CENREPQUOTED1-2026-09-29.md`
 
 Repository:
 
@@ -12,78 +12,114 @@ Repository:
 
 Current source branch:
 
-`codex/menu3-homeonly5`
+`codex/menu3-homeonly7-cenrepquoted1`
 
 Build host:
 
 `phai-nguyen/Eka2l1_bot_menu_simbiam` / `codex/m3home-homeonly2-build`
 
-## Current baseline
+## Baseline
 
-HOMEONLY2 / MENUUI36 WINFOCUS1 + NOJAVA + MANIC3 is the correct semantic baseline.
+HOMEONLY2 / MENUUI36 WINFOCUS1 + NOJAVA + MANIC3 remains the semantic baseline.
 
-Do not return to HOMEONLY1/MENUUI14.
-Do not return to NativeBoot/CompatBoot/DirectHome unless explicitly requested.
+Preserve:
+- M3HOME1 Menu3 → real Home UID `0x102750F0`
+- HOMEONLY3 Home-exit containment
+- HOMEONLY4 event/wake diagnostics
+- HOMEONLY5 USER/11 diagnostics
+- firmware RM-356 v60.0.003 unchanged
+- NativeBoot/CompatBoot/J2ME absent
 
-Current runtime stack includes:
-- M3HOME1 Menu3 -> real Home UID 0x102750F0
-- CenRep transaction support
-- generic DeleteRange
-- GetString diagnostics
-- HOMEONLY3 post-exit containment
-- HOMEONLY4 EventReady/request-semaphore probes
-- HOMEONLY5 USER/11 stack capture
+## Root cause — resolved
 
-## Latest device result
+Exact RM-356 `aiscutplugin.dll` reverse engineering maps HOMEONLY5 `+0x475A` to the return after euser ordinal 953:
 
-HOMEONLY5 reproduced real Home panic:
+`TDes16::Copy(const TDesC16&)`
 
-- category: USER
-- reason: 11
-- time: ~17:25:14.279
-- immediately after CenRep GetString:
-  - repo 0x10275104
-  - key 0xA0001000
-  - entry_len 52
-  - dst_max 2048
-  - write_len 52
-  - status 0
+USER/11 is `ETDes16Overflow`.
 
-HOMEONLY5 stack maps multiple frames into exact firmware module:
+AISCUT is parsing shortcut URI metadata. The stack proves the failing field is `iconid`; `+0x6F60/+0x6F64` are the static UTF-16 descriptor/literal `"iconid"`, not call frames.
 
-`Z:\\sys\\bin\\aiscutplugin.dll`
+The correct RM-356 shortcut value is:
 
-Important offsets:
-- 0x6F64
-- 0x475A
-- 0x6F60
-- 0x4A20
-- 0x4E68
-- 0x0D76
+`localapp:0x101F4CD2?iconid=270501603;7110&toolbar=1`
 
-## Important ABI conclusion
+It is 51 UTF-16 units / 102 bytes.
 
-Do NOT change CenRep length 52 -> 26.
+The old EKA2L1 generic INI tokenizer split `=` even inside quoted tokens, truncating it to:
 
-Symbian source for `CRepository::Get(TDes16&, TInt&)` wraps the target in `TPtr8`, receives raw byte length, then divides both descriptor length and actual length by 2 client-side.
+`localapp:0x101F4CD2?iconid`
 
-Therefore the CenRep server returning 52 bytes is ABI-consistent.
+This prefix is 26 UTF-16 units / exactly 52 bytes, matching HOMEONLY5 runtime `entry_len=52`.
 
-## Current task
+AISCUT then receives query `iconid` without a value and reaches the invalid descriptor Copy path that panics USER/11.
 
-Reverse-engineer the exact RM-356 `aiscutplugin.dll` and map the HOMEONLY5 stack offsets to functions/instructions/imports to find the descriptor operation that triggers USER/11.
+## HOMEONLY7
 
-Exact binary was extracted in the current runtime; hashes and paths are recorded in the authoritative handoff.
+HOMEONLY7 backports the current upstream quoted-token tokenizer behavior in `src/emu/common/src/ini.cpp`.
 
-Do not suppress USER/11 and do not hardcode Home CenRep keys as a final fix.
+It does not change:
+- CenRep Get/Set byte ABI
+- 52→26 behavior
+- repository keys
+- firmware
+- AISCUT
+- focus/input/scheduler
+- panic semantics
 
-## Build authority
+Source runtime fix:
+`2f54cf599b5fd7f138768b77cc33edbac76eeae3`
 
-HOMEONLY5:
-- Actions run: 36553079575
-- IPA SHA256:
-  `0b7737d9f3e38403dc52698c15f506e142674b6e8066f347a41a6e32ab25391b`
-- cache:
-  `eka2l1-homeonly5-user11stack-macos15-v1`
+Regression gates:
+`fb2f19156273efe971e324b09a3d6817f0ed61f9`
 
-Future HOMEONLY6 should restore HOMEONLY5 cache and apply only the next delta.
+## Build
+
+Actions run:
+
+`36564131999`
+
+Result:
+
+**GREEN**
+
+Build source HEAD:
+`fb2f19156273efe971e324b09a3d6817f0ed61f9`
+
+IPA:
+`EKA2L1-HOMEONLY7-CENREPQUOTED1-unsigned.ipa`
+
+IPA SHA-256:
+`7a73c76a1446c4c0e541ab8d837f7c87bbdc1f672b01e014c80f886b68a6ebf4`
+
+Artifacts:
+- IPA: `11031671131`
+- AUDIT: `11031141639`
+
+Cache:
+`eka2l1-homeonly7-cenrepquoted1-macos15-v1`
+
+## Next device test
+
+Use a **clean CenRep state** for the authoritative HOMEONLY7 validation.
+
+Reason: EKA2L1 loads persisted `.CRE` before ROM/default `.TXT`. Existing HOMEONLY5 app data may already contain the malformed 52-byte value, so an overlay install can keep reproducing USER/11 even though the parser fix is correct.
+
+Preferred validation:
+1. clean-install HOMEONLY7;
+2. install the same RM-356 firmware;
+3. Menu3 → **Vào màn hình chính**;
+4. wait 15–20 seconds without touching;
+5. if Home stays alive, test Telephone, Contacts and Set up e-mail one at a time;
+6. export all four logs.
+
+Do not use an old-state overlay failure as evidence against HOMEONLY7 until stale persisted CenRep state is excluded.
+
+## Forbidden regressions
+
+- Do not change CenRep 52→26.
+- Do not hardcode key `0xA0001000`.
+- Do not truncate URI values.
+- Do not patch `aiscutplugin.dll`.
+- Do not suppress USER/11.
+- Do not return to NativeBoot/CompatBoot/DirectHome.
