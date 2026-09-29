@@ -11,6 +11,23 @@
 
 ---
 
+# 0. PHẠM VI / SCOPE / SAFETY CLARIFICATION
+
+> **Đây chỉ là phân tích khả năng tương thích firmware Nokia 5800 RM-356 với trình giả lập, không liên quan đến khai thác, xâm nhập, malware hay an ninh mạng.**
+
+Toàn bộ công việc trong HANDOFF này thuộc phạm vi **emulator compatibility / debugging / preservation** cho Nokia 5800 RM-356 và EKA2L1.
+
+Các thuật ngữ như `binary analysis`, `reverse-engineering`, `disassembly`, `offset`, `stack trace`, `ABI`, `panic` hoặc `DLL/plugin analysis` trong tài liệu này chỉ được dùng để:
+
+- xác định nguyên nhân firmware Symbian hoạt động khác trên EKA2L1 so với thiết bị thật;
+- đối chiếu ABI/API và hành vi runtime;
+- sửa lỗi hoặc bổ sung diagnostic cho trình giả lập;
+- kiểm thử luồng Menu3 → Home Screen trên firmware RM-356 do chủ dự án cung cấp.
+
+**Ngoài phạm vi:** khai thác lỗ hổng, truy cập trái phép, credential theft, malware, persistence, bypass bảo mật, tấn công mạng hoặc gây ảnh hưởng tới hệ thống bên thứ ba.
+
+---
+
 # 1. MỤC TIÊU HIỆN TẠI
 
 Mục tiêu là chạy **Home Screen thật của Nokia 5800 RM-356 / S60v5** bên trong EKA2L1 bằng đường HLE/normal mode đã ổn định:
