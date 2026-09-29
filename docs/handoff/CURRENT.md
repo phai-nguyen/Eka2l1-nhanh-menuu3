@@ -1,123 +1,89 @@
-# EKA2L1 NATIVEBOOT2 — Current
+# Hướng 1 Menu3 → Home — CURRENT
 
-Updated: 2026-09-27
+Updated: 2026-09-29
 
-Latest handoff: [NEWCHAT-COMPATBOOT1-MENUPROBE1-2026-09-26.md](NEWCHAT-COMPATBOOT1-MENUPROBE1-2026-09-26.md)
-Latest device evidence: [B97 overlay-install log](history/B97-DEVICE1.md)
-Latest diagnostic change: [B98 Menu3 FileServer Entry status probe](history/B98-MENU3ENTRY1.md)
+Authoritative handoff:
 
-Repository: `phai-nguyen/Eka2l1_bot_menu_simbiam`
-PR: [#6 — B90 COMPATBOOT1 Menu Probe](https://github.com/phai-nguyen/Eka2l1_bot_menu_simbiam/pull/6), open and unmerged
-Branch: `codex/compatboot1-menuprobe1`
-Worktree: `/workspace/scratch/4ac0d495afb9/Eka2l1_bot_menu_simbiam/.worktrees/compatboot1-menuprobe1`
-Base branch: `nativeboot2-current` (B89 baseline)
+`docs/handoff/NEWCHAT-HOMEONLY5-AISCUT-2026-09-29.md`
 
-## Latest device result — B97
+Repository:
 
-B97 was installed over the existing app with old logs cleared. The user reports
-the phone-startup failure remained visible and the app exited cleanly; there
-was no video for this run. The log covers about 4m07s and reaches
-`shutdown_done`, with no crash sequence. The six-service barrier passed and
-real `menu3.exe` launched, but there is no `[COMPATBOOT][TARGET_VISIBLE]`.
+`phai-nguyen/Eka2l1-nhanh-menuu3`
 
-The first Menu `Leave(-5)` again follows a successful FileFlush of
-`hasclassicgrid.o0001` and maps to stock EStor `CFileStore::DoRevertL()` in the
-stack. B97 also records a second `Leave(-5)` from Avkon's
-`CAknApplication::OpenIniFileLC(RFs&) const`, whose ROM code explicitly calls
-`User::Leave(-5)`. At 15:33:34.662 FileServer logs an `Entry` query for
-`C:\private\101F4CD2\appshell.ini`; one millisecond later Avkon's
-`OpenIniFileLC` traps `-5`, and the leave record names the preceding FileServer
-opcode `0x16`. B97 does not record the Entry completion status, so this
-sequence does not yet prove the returned value. `TfxServer` is missing for
-several system processes before Menu3; the Menu3-scoped first-failure marker
-is not the first system-wide miss. Neither that miss nor the EStor Leave is
-proven to cause the persistent startup message.
+Current source branch:
 
-The log also confirms inherited B89 behavior: Telephone `CONE 14` is converted
-to a clean exit, and SYSSTART's global-state request `101 -> 116` is overridden
-to `109` (`NormalRfOn`). Branch 1 intentionally retains this B89 behavior;
-B97 is not a no-bypass test. See [B97 device evidence](history/B97-DEVICE1.md).
+`codex/menu3-homeonly5`
 
-At 15:33:34.662 FileServer logs an `Entry` query for
-`C:\private\101F4CD2\appshell.ini`; one millisecond later Avkon's
-`OpenIniFileLC` traps `-5`, and the leave record names the preceding FileServer
-opcode `0x16`. B97 does not record the Entry completion status, so the sequence
-does not yet prove the returned value.
+Build host:
 
-## Current diagnostic change — B98
+`phai-nguyen/Eka2l1_bot_menu_simbiam` / `codex/m3home-homeonly2-build`
 
-B98 adds a read-only `[COMPATBOOT][MENU3_ENTRY]` record after the Entry VFS
-lookup. It logs only the active CompatBoot target UID3, normalized path, found
-flag, and exact status that the existing completion branch will return. The
-FileServer result, six-service barrier, real Menu3 launch, Native Boot default,
-firmware, and Branch 1 B88/B89 behavior are unchanged. See
-[B98 diagnostic](history/B98-MENU3ENTRY1.md).
+## Current baseline
 
-Local B98 contract, manifest validation, full-suite status, FASTBUILD run, and
-artifact details will be added after verification; no GREEN/IPA claim is made
-until Actions confirms the result.
+HOMEONLY2 / MENUUI36 WINFOCUS1 + NOJAVA + MANIC3 is the correct semantic baseline.
 
-## Previous device result — B96
+Do not return to HOMEONLY1/MENUUI14.
+Do not return to NativeBoot/CompatBoot/DirectHome unless explicitly requested.
 
-B96's 328.7-second recording shows “Phone start-up failed. Contact the
-retailer.” still present near the five-minute mark, then shows the emulator's
-**Thoát Emulator** dialog near the end. The app did not crash to iOS Home; its
-log records `exit_requested` at 14:08:07.628 and `shutdown_done` at
-14:08:07.688. There was no `[COMPATBOOT][TARGET_VISIBLE]` marker.
+Current runtime stack includes:
+- M3HOME1 Menu3 -> real Home UID 0x102750F0
+- CenRep transaction support
+- generic DeleteRange
+- GetString diagnostics
+- HOMEONLY3 post-exit containment
+- HOMEONLY4 EventReady/request-semaphore probes
+- HOMEONLY5 USER/11 stack capture
 
-CompatBoot passed its six-service barrier at 14:03:25.436 and launched the
-real `menu3.exe` at 14:03:25.463. The first Menu `Leave(-5)` occurred at
-14:03:30.669, just after Menu opened and flushed the theme object
-`hasclassicgrid.o0001` (`flush_ok=1`, `completion=0`). EPOC9 export mapping
-places the first Leave in stock `CFileStore::DoRevertL()`: the ROM Thumb code
-loads `-5` into `r0` and calls the EUser `User::Leave(int)` import. The B96
-stack contains that call's return address, and its logged `r0` is `0xFFFFFFFB`.
-`CStreamStore::Revert()` and destructor frames fit the cleanup path. This
-explains this specific trapped Leave, but not why Menu enters Revert or why the
-phone-startup screen remains failed. FileFlush had succeeded; the target-scoped
-`TfxServer` miss came 38 ms after the Leave and is not established as its cause.
-See [B96 device evidence](history/B96-DEVICE1.md).
+## Latest device result
 
-## Current change — B96
+HOMEONLY5 reproduced real Home panic:
 
-B96 adds read-only `[COMPATBOOT][MENU3_LEAVE5_EXPORT]` and
-`[COMPATBOOT][MENU3_LEAVE5_CODE16]` diagnostics to the existing Menu3
-`Leave(-5)` stack trace. They resolve the nearest loaded E32 export and a
-bounded Thumb/ARM instruction window for stack values that map to guest code.
-The existing CompatBoot and target-UID gates remain in force; leave/trap
-handling, firmware, CenRep, TFX/server behavior, and the six-service barrier
-are unchanged.
+- category: USER
+- reason: 11
+- time: ~17:25:14.279
+- immediately after CenRep GetString:
+  - repo 0x10275104
+  - key 0xA0001000
+  - entry_len 52
+  - dst_max 2048
+  - write_len 52
+  - status 0
 
-Local verification: 62 tests passed, two upstream-dependent tests skipped
-(64 total); manifest validation and `git diff --check` passed. FASTBUILD #315
-found one B96 integration-test scope assertion error; the assertion was fixed
-to cover the whole diagnostic block. FASTBUILD #316 is **GREEN** on source
-commit `9268e8bfbf546afef801a3bd24c090a0bdb7affe`, run
-[36295344432](https://github.com/phai-nguyen/Eka2l1_bot_menu_simbiam/actions/runs/36295344432).
-B28 baseline, milestone application and regressions, iOS compile, binary
-invariants, unsigned IPA packaging, and artifact upload all passed. The build
-took 121 seconds; iOS compile took 43 seconds.
+HOMEONLY5 stack maps multiple frames into exact firmware module:
 
-FASTBUILD #318 ran on the following docs-only commit
-`af4a5172ee26e5be083d64b6f50de8d6bdc6fced` and also completed GREEN. It
-produced artifact ID `10925518795`, expiring 2026-10-11 07:34 UTC. Since #318
-contains no runtime code changes, B97's Leave evidence comes from the same
-runtime diagnostics as #316.
+`Z:\\sys\\bin\\aiscutplugin.dll`
 
-Latest IPA artifact: `EKA2L1-NATIVEBOOT2-CURRENT-FAST-NOJAVA-MANIC3-IPA`,
-ID `10923757448`, ZIP size 20,011,611 bytes, expires 2026-10-11 04:49 UTC.
-The contained unsigned IPA SHA-256 is
-`cf9e2ce80f9748d23d04362ab7efe156c796ad935e8496da42dba3c722719cb2`.
-On iPhone, open the FASTBUILD #316 run page above in Safari while signed into
-GitHub, download that artifact under **Artifacts**, then tap the ZIP in Files
-to extract it. Import the unsigned `.ipa` into ESign Match or the usual
-sideloading tool to sign and install; Files does not install an unsigned IPA.
+Important offsets:
+- 0x6F64
+- 0x475A
+- 0x6F60
+- 0x4A20
+- 0x4E68
+- 0x0D76
 
-## Next
+## Important ABI conclusion
 
-Verify the B98 Menu3 FileServer Entry path/status trace in GitHub Actions, then
-device-test it. Check whether `appshell.ini` lookup returns `KErrNotFound`
-immediately before `OpenIniFileLC` traps `-5`. Keep the EStor Revert,
-TfxServer miss, and phone-startup message separate until a causal link is
-demonstrated. Keep Native Boot as default and preserve Branch 1's B88/B89
-behavior, firmware, and six-service readiness barrier.
+Do NOT change CenRep length 52 -> 26.
+
+Symbian source for `CRepository::Get(TDes16&, TInt&)` wraps the target in `TPtr8`, receives raw byte length, then divides both descriptor length and actual length by 2 client-side.
+
+Therefore the CenRep server returning 52 bytes is ABI-consistent.
+
+## Current task
+
+Reverse-engineer the exact RM-356 `aiscutplugin.dll` and map the HOMEONLY5 stack offsets to functions/instructions/imports to find the descriptor operation that triggers USER/11.
+
+Exact binary was extracted in the current runtime; hashes and paths are recorded in the authoritative handoff.
+
+Do not suppress USER/11 and do not hardcode Home CenRep keys as a final fix.
+
+## Build authority
+
+HOMEONLY5:
+- Actions run: 36553079575
+- IPA SHA256:
+  `0b7737d9f3e38403dc52698c15f506e142674b6e8066f347a41a6e32ab25391b`
+- cache:
+  `eka2l1-homeonly5-user11stack-macos15-v1`
+
+Future HOMEONLY6 should restore HOMEONLY5 cache and apply only the next delta.
